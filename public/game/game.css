@@ -1,10 +1,4 @@
-@import "tailwindcss" layer(tailwind);
-
-@layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-}
+/* Outlaw Leo - based on Chrome offline runner */
 
 html, body {
   padding: 0;
@@ -14,39 +8,19 @@ html, body {
   background: #f7f7f7;
 }
 
-/* ---------- Game Page Layout ---------- */
-
-.game-page {
-  position: relative;
-  min-height: 100vh;
-  background: #f7f7f7;
+.inverted,
+.inverted .runner-canvas {
+  filter: invert(100%);
 }
 
-.game-hint-bar {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.6rem;
-  color: #535353;
-  opacity: 0.5;
-  text-align: center;
-  margin: 12px 0;
-}
-
-/* ---------- Start Overlay ---------- */
-
-.start-overlay {
+.sendmessage {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #f7f7f7 url(/game/assets/start-bg.png) center / cover no-repeat;
+  background: #f7f7f7 url(assets/start-bg.png) center / cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .start-text {
@@ -77,137 +51,159 @@ html, body {
   margin: 0;
 }
 
-/* ---------- Credit Gate ---------- */
-
-.credit-gate {
-  position: fixed;
-  inset: 0;
-  z-index: 150;
-  background: rgba(247, 247, 247, 0.95);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.icon {
+  -webkit-user-select: none;
+  user-select: none;
+  display: inline-block;
 }
 
-.credit-gate-panel {
-  background: #f7f7f7;
-  border: 3px solid #535353;
-  border-radius: 4px;
-  padding: 36px 44px;
-  max-width: 440px;
-  width: 92%;
-  text-align: center;
+.icon-offline {
+  content: -webkit-image-set( url(assets/default_100_percent/100-error-offline.png) 1x, url(assets/default_200_percent/200-error-offline.png) 2x);
+  position: relative;
 }
 
-.credit-gate-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 1.2rem;
-  color: #535353;
-  margin: 0 0 8px 0;
+.hidden {
+  display: none;
 }
 
-.credit-gate-sub {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.5rem;
-  color: #ff1493;
-  margin: 0 0 24px 0;
-  letter-spacing: 2px;
-}
 
-.credit-gate-desc {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.5rem;
-  color: #535353;
-  margin: 0 0 20px 0;
-  opacity: 0.8;
-}
+/* Offline page */
 
-.credit-gate-btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.6rem;
-  border: 2px solid;
-  border-radius: 3px;
-  padding: 14px 28px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  display: block;
+.offline .interstitial-wrapper {
+  color: #2b2b2b;
+  font-size: 1em;
+  line-height: 1.55;
+  margin: 0 auto;
+  max-width: 600px;
+  padding-top: 100px;
   width: 100%;
-  margin: 0 0 12px 0;
 }
 
-.credit-gate-connect {
-  background: #535353;
-  color: #fff;
-  border-color: #535353;
+.offline .runner-container {
+  height: 150px;
+  max-width: 600px;
+  overflow: hidden;
+  position: absolute;
+  top: 35px;
+  width: 44px;
 }
 
-.credit-gate-connect:hover {
-  background: #333;
-  border-color: #333;
+.offline .runner-canvas {
+  height: 150px;
+  max-width: 600px;
+  opacity: 1;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  z-index: 2;
 }
 
-.credit-gate-buy {
-  background: #ff1493;
-  color: #fff;
-  border-color: #ff1493;
+.offline .controller {
+  background: rgba(247, 247, 247, .1);
+  height: 100vh;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 1;
 }
 
-.credit-gate-buy:hover {
-  background: #d4107a;
-  border-color: #d4107a;
+#offline-resources {
+  display: none;
 }
 
-.credit-gate-buy:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@media (max-width: 420px) {
+  .suggested-left > #control-buttons, .suggested-right > #control-buttons {
+    float: none;
+  }
+  .snackbar {
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    border-radius: 0;
+  }
 }
 
-.credit-gate-wallet {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.35rem;
-  color: #535353;
-  opacity: 0.5;
-  margin: 0 0 8px 0;
-  word-break: break-all;
+@media (max-height: 350px) {
+  h1 {
+    margin: 0 0 15px;
+  }
+  .icon-offline {
+    margin: 0 0 10px;
+  }
+  .interstitial-wrapper {
+    margin-top: 5%;
+  }
+  .nav-wrapper {
+    margin-top: 30px;
+  }
 }
 
-.credit-gate-status {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.4rem;
-  color: #ff1493;
-  margin: 12px 0 0 0;
-  min-height: 16px;
+@media (min-width: 600px) and (max-width: 736px) and (orientation: landscape) {
+  .offline .interstitial-wrapper {
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
-/* ---------- Lives Indicator ---------- */
-
-.lives-indicator {
-  position: fixed;
-  top: 12px;
-  left: 16px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(247, 247, 247, 0.9);
-  padding: 4px 10px 4px 4px;
-  border-radius: 4px;
-  border: 2px solid #535353;
+@media (min-width: 420px) and (max-width: 736px) and (min-height: 240px) and (max-height: 420px) and (orientation:landscape) {
+  .interstitial-wrapper {
+    margin-bottom: 100px;
+  }
 }
 
-.lives-icon {
-  width: 32px;
-  height: 32px;
+@media (min-height: 240px) and (orientation: landscape) {
+  .offline .interstitial-wrapper {
+    margin-bottom: 90px;
+  }
+  .icon-offline {
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-height: 320px) and (orientation: landscape) {
+  .icon-offline {
+    margin-bottom: 0;
+  }
+  .offline .runner-container {
+    top: 10px;
+  }
+}
+
+@media (max-width: 240px) {
+  .interstitial-wrapper {
+    overflow: inherit;
+    padding: 0 8px;
+  }
+}
+
+.arcade-mode,
+.arcade-mode .runner-container,
+.arcade-mode .runner-canvas {
   image-rendering: pixelated;
-  object-fit: contain;
-  object-position: left top;
+  max-width: 100%;
+  overflow: hidden;
 }
 
-.lives-count {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.75rem;
-  color: #535353;
-  font-weight: bold;
+.arcade-mode #buttons,
+.arcade-mode #main-content {
+  opacity: 0;
+  overflow: hidden;
+}
+
+.arcade-mode .interstitial-wrapper {
+  height: 100vh;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.arcade-mode .runner-container {
+  left: 0;
+  margin: auto;
+  right: 0;
+  transform-origin: top center;
+  transition: transform 250ms cubic-bezier(0.4, 0, 1, 1) 400ms;
+  z-index: 2;
 }
 
 /* ---------- Leaderboard Overlay ---------- */
@@ -299,18 +295,11 @@ html, body {
   color: #fff;
   border-color: #535353;
   margin: 0 0 10px 0;
-  display: block;
-  width: 100%;
 }
 
 .lb-save-btn:hover {
   background: #333;
   border-color: #333;
-}
-
-.lb-save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .lb-save-btn.wallet-needed {
