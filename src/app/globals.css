@@ -575,8 +575,8 @@ html, body {
 
 .leader-badge {
   position: absolute;
-  top: 12px;
-  right: 16px;
+  top: 40px;
+  left: 16px;
   z-index: 50;
   display: flex;
   align-items: center;
