@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useWallet } from "@provablehq/aleo-wallet-adaptor-react";
+import { useShieldWallet } from "@/components/WalletProvider";
 import {
   TREASURY_ADDRESS,
   CREDIT_COST_MICROCREDITS,
@@ -21,44 +21,28 @@ export default function CreditGate({
   onCreditsUpdated,
   onWalletConnected,
 }: CreditGateProps) {
-  const {
-    connected,
-    connecting,
-    address,
-    wallets,
-    selectWallet,
-    executeTransaction,
-  } = useWallet();
+  const { shieldDetected, address, network, connecting, connectError, connect, executeTransaction } =
+    useShieldWallet();
   const [status, setStatus] = useState("");
   const [buying, setBuying] = useState(false);
   const creditsFetched = useRef(false);
 
   useEffect(() => {
-    if (connected && address && !walletAddress) {
+    if (address && !walletAddress) {
       onWalletConnected(address);
     }
-  }, [connected, address, walletAddress, onWalletConnected]);
+  }, [address, walletAddress, onWalletConnected]);
 
   useEffect(() => {
-    if (connected && address && !creditsFetched.current) {
+    if (address && !creditsFetched.current) {
       creditsFetched.current = true;
       fetchCredits(address);
     }
-  }, [connected, address]);
+  }, [address]);
 
-  const handleConnect = () => {
-    console.log("[CreditGate] handleConnect called");
-    console.log("[CreditGate] wallets available:", wallets.length, wallets.map(w => w.adapter.name));
-    console.log("[CreditGate] connected:", connected, "connecting:", connecting, "address:", address);
-    const firstWallet = wallets[0];
-    if (firstWallet) {
-      console.log("[CreditGate] selecting wallet:", firstWallet.adapter.name);
-      setStatus("Connecting wallet...");
-      selectWallet(firstWallet.adapter.name);
-    } else {
-      console.log("[CreditGate] NO wallets found");
-      setStatus("No wallet adapters found. Please install Shield Wallet and refresh.");
-    }
+  const handleConnect = async () => {
+    setStatus("");
+    await connect();
   };
 
   const fetchCredits = async (addr: string) => {
@@ -74,7 +58,7 @@ export default function CreditGate({
   };
 
   const handleBuyCredits = async () => {
-    if (!walletAddress || !connected) return;
+    if (!walletAddress) return;
     setBuying(true);
     setStatus("Requesting payment...");
 
@@ -130,19 +114,42 @@ export default function CreditGate({
 
         {!walletAddress ? (
           <>
-            <p className="credit-gate-desc">
-              Connect your Shield Wallet to play
-            </p>
-            <button
-              className="credit-gate-btn credit-gate-connect"
-              onClick={handleConnect}
-              disabled={connecting}
-            >
-              {connecting ? "CONNECTING..." : "CONNECT WALLET"}
-            </button>
+            {shieldDetected ? (
+              <>
+                <p className="credit-gate-desc">
+                  Connect your Shield Wallet to play
+                </p>
+                <button
+                  className="credit-gate-btn credit-gate-connect"
+                  onClick={handleConnect}
+                  disabled={connecting}
+                >
+                  {connecting ? "CONNECTING..." : "CONNECT WALLET"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="credit-gate-desc">
+                  You need Shield Wallet to play
+                </p>
+                <a
+                  href="https://www.shield.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="credit-gate-btn credit-gate-connect"
+                >
+                  INSTALL SHIELD WALLET
+                </a>
+              </>
+            )}
           </>
         ) : (
           <>
+            {network && network !== "testnet" && (
+              <p className="credit-gate-status" style={{ color: "#ffaa00" }}>
+                Warning: connected to {network} — switch to testnet for score submission
+              </p>
+            )}
             <p className="credit-gate-desc">
               {PLAYS_PER_CREDIT} plays for 1 Aleo Credit
             </p>
@@ -154,11 +161,14 @@ export default function CreditGate({
               {buying ? "PROCESSING..." : `BUY ${PLAYS_PER_CREDIT} PLAYS`}
             </button>
             <p className="credit-gate-wallet">
-              {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
+              {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
             </p>
           </>
         )}
 
+        {connectError && (
+          <p className="credit-gate-status" style={{ color: "#ff1493" }}>{connectError}</p>
+        )}
         {status && <p className="credit-gate-status">{status}</p>}
       </div>
     </div>

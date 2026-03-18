@@ -133,6 +133,9 @@ html, body {
   display: block;
   width: 100%;
   margin: 0 0 12px 0;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .credit-gate-connect {
@@ -292,6 +295,8 @@ html, body {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   display: inline-block;
+  text-decoration: none;
+  text-align: center;
 }
 
 .lb-save-btn {
@@ -343,6 +348,12 @@ html, body {
   margin: 0 0 10px 0;
 }
 
+.lb-board-viewport {
+  overflow: hidden;
+  /* Show exactly 3 rows: 28px each */
+  height: 84px;
+}
+
 .lb-board-list {
   list-style: none;
   padding: 0;
@@ -351,8 +362,6 @@ html, body {
   font-size: 0.45rem;
   color: #535353;
   text-align: left;
-  max-height: 180px;
-  overflow-y: auto;
 }
 
 .lb-board-list li {
@@ -360,6 +369,8 @@ html, body {
   justify-content: space-between;
   padding: 5px 8px;
   border-bottom: 1px solid #ddd;
+  height: 28px;
+  box-sizing: border-box;
 }
 
 .lb-board-list li .lb-rank {
@@ -393,6 +404,155 @@ html, body {
   color: #fff;
 }
 
+/* ---------- Wallet Connect Modal ---------- */
+
+.wallet-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.wallet-modal {
+  background: #2a2a2a;
+  border: 3px solid #535353;
+  border-radius: 10px;
+  padding: 32px 28px 24px;
+  width: 340px;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.wallet-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 0.6rem;
+  color: #777;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1;
+  padding: 4px;
+}
+
+.wallet-modal-close:hover {
+  color: #fff;
+}
+
+.wallet-modal-header {
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.wallet-modal-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: #fff;
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+}
+
+.wallet-modal-subtitle {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  color: #999;
+  margin: 0;
+}
+
+.wallet-modal-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #444;
+  border-radius: 8px;
+  background: #333;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.wallet-modal-option:hover {
+  border-color: #ff1493;
+  background: #3a3a3a;
+}
+
+.wallet-modal-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wallet-modal-icon svg {
+  border-radius: 8px;
+}
+
+.wallet-modal-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 8px;
+}
+
+.wallet-modal-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  color: #fff;
+  text-align: left;
+}
+
+.wallet-modal-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.3rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.wallet-modal-detected {
+  background: rgba(46, 125, 50, 0.2);
+  color: #66bb6a;
+}
+
+.wallet-modal-install {
+  background: rgba(230, 81, 0, 0.2);
+  color: #ffa726;
+}
+
+.wallet-modal-hint {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.3rem;
+  color: #888;
+  margin: 14px 0 0 0;
+  text-align: center;
+  line-height: 1.8;
+}
+
+.wallet-modal-error {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.3rem;
+  color: #ff1493;
+  margin: 14px 0 0 0;
+  text-align: center;
+  line-height: 1.8;
+}
+
 /* ---------- Restart Button ---------- */
 
 .restart-btn-wrap {
@@ -409,4 +569,36 @@ html, body {
 .restart-btn:hover {
   background: #333;
   border-color: #333;
+}
+
+/* ---------- #1 Leader Badge ---------- */
+
+.leader-badge {
+  position: absolute;
+  top: 40px;
+  left: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(83, 83, 83, 0.9);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.leader-badge-crown {
+  font-size: 0.35rem;
+  color: #ffd700;
+}
+
+.leader-badge-initials {
+  font-size: 0.45rem;
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+.leader-badge-score {
+  font-size: 0.35rem;
+  color: #aaa;
 }

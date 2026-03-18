@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useWallet } from "@provablehq/aleo-wallet-adaptor-react";
+import { useShieldWallet } from "@/components/WalletProvider";
 import GameCanvas from "@/components/GameCanvas";
 import Leaderboard from "@/components/Leaderboard";
+import LeaderBadge from "@/components/LeaderBadge";
 
 export default function Home() {
-  const { address, connected } = useWallet();
+  const { address } = useShieldWallet();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [gameOverScore, setGameOverScore] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -14,10 +15,10 @@ export default function Home() {
   const [showStartScreen, setShowStartScreen] = useState(true);
 
   useEffect(() => {
-    if (connected && address) {
+    if (address) {
       setWalletAddress(address);
     }
-  }, [connected, address]);
+  }, [address]);
 
   useEffect(() => {
     if (!showStartScreen) return;
@@ -58,6 +59,8 @@ export default function Home() {
 
   return (
     <main className="game-page">
+      <LeaderBadge />
+
       {showStartScreen && (
         <div className="start-overlay">
           <div className="start-text">

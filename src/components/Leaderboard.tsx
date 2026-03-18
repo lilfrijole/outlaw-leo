@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useWallet } from "@provablehq/aleo-wallet-adaptor-react";
+import { createPortal } from "react-dom";
+import { useShieldWallet } from "@/components/WalletProvider";
 
 interface LeaderboardEntry {
   id: string;
@@ -19,6 +20,9 @@ interface LeaderboardProps {
   onRestart: () => void;
 }
 
+// Row height in px (padding + font + border) — must match CSS
+const ROW_HEIGHT = 28;
+
 export default function Leaderboard({
   visible,
   score,
@@ -27,8 +31,7 @@ export default function Leaderboard({
   onClose,
   onRestart,
 }: LeaderboardProps) {
-  const { connected, connecting, address, wallets, selectWallet } = useWallet();
-  const [connectError, setConnectError] = useState("");
+  const { shieldDetected, address, network, connecting, connectError, connect } = useShieldWallet();
   const [initials, setInitials] = useState(["_", "_", "_"]);
   const [cursorPos, setCursorPos] = useState(0);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -36,6 +39,8 @@ export default function Leaderboard({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [pendingSave, setPendingSave] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [visibleStart, setVisibleStart] = useState(0);
   const initialsRef = useRef(initials);
   const cursorPosRef = useRef(cursorPos);
 
@@ -58,16 +63,58 @@ export default function Leaderboard({
       setCursorPos(0);
       setSaved(false);
       setSaveError("");
-      setConnectError("");
       setPendingSave(false);
+      setShowWalletModal(false);
+      setVisibleStart(0);
       fetchLeaderboard();
     }
   }, [visible, fetchLeaderboard]);
+
+  // Smooth upward scroll: hold top 3 for 3s, then scroll up one row
+  // every 2s. After reaching the end, pause 3s, then reset to top and repeat.
+  useEffect(() => {
+    if (!visible || entries.length <= 3) return;
+    const total = Math.min(entries.length, 10);
+    const maxStart = Math.max(0, total - 3);
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let resetTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const startCycle = () => {
+      intervalId = setInterval(() => {
+        setVisibleStart((prev) => {
+          const next = prev + 1;
+          if (next > maxStart) {
+            // Reached the end — pause, then restart from top
+            if (intervalId) clearInterval(intervalId);
+            intervalId = null;
+            resetTimer = setTimeout(() => {
+              setVisibleStart(0);
+              // Restart after resetting to top
+              resetTimer = setTimeout(startCycle, 3000);
+            }, 3000);
+            return prev;
+          }
+          return next;
+        });
+      }, 2000);
+    };
+
+    // Initial hold on top 3
+    const initTimer = setTimeout(startCycle, 3000);
+
+    return () => {
+      clearTimeout(initTimer);
+      if (intervalId) clearInterval(intervalId);
+      if (resetTimer) clearTimeout(resetTimer);
+    };
+  }, [visible, entries.length]);
 
   useEffect(() => {
     if (!visible) return;
 
     const handler = (e: KeyboardEvent) => {
+      if (showWalletModal) return;
       const key = e.key.toUpperCase();
       if (key.length === 1 && key >= "A" && key <= "Z") {
         e.preventDefault();
@@ -97,30 +144,34 @@ export default function Leaderboard({
 
     document.addEventListener("keydown", handler, true);
     return () => document.removeEventListener("keydown", handler, true);
-  }, [visible]);
+  }, [visible, showWalletModal]);
 
   useEffect(() => {
-    console.log("[Leaderboard] wallet state changed - connected:", connected, "connecting:", connecting, "address:", address);
-    if (connected && address && !walletAddress) {
-      console.log("[Leaderboard] wallet connected! Setting address:", address);
+    if (address && !walletAddress) {
       onWalletConnected(address);
     }
-  }, [connected, connecting, address, walletAddress, onWalletConnected]);
+  }, [address, walletAddress, onWalletConnected]);
 
-  // Auto-save after wallet connects if user had clicked "CONNECT WALLET & SAVE"
+  // Auto-save + close modal after wallet connects
   useEffect(() => {
     if (pendingSave && walletAddress && !saved && !saving) {
-      console.log("[Leaderboard] pending save triggered, wallet now available:", walletAddress);
       setPendingSave(false);
+      setShowWalletModal(false);
       doSave(walletAddress);
     }
   }, [pendingSave, walletAddress, saved, saving]);
+
+  // Close modal once connected
+  useEffect(() => {
+    if (walletAddress && showWalletModal) {
+      setShowWalletModal(false);
+    }
+  }, [walletAddress, showWalletModal]);
 
   const doSave = async (addr: string) => {
     setSaving(true);
     setSaveError("");
     try {
-      console.log("[Leaderboard] saving score:", { addr, initials: initialsRef.current.join(""), score });
       const res = await fetch("/api/leaderboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,42 +183,33 @@ export default function Leaderboard({
       });
       const data = await res.json();
       if (res.ok) {
-        console.log("[Leaderboard] save success:", data);
         setSaved(true);
         await fetchLeaderboard();
       } else {
-        console.error("[Leaderboard] save failed:", data);
         setSaveError(data.error || "Failed to save score");
       }
-    } catch (err) {
-      console.error("[Leaderboard] save error:", err);
+    } catch {
       setSaveError("Network error saving score");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleConnectWallet = () => {
-    setConnectError("");
-    console.log("[Leaderboard] handleConnectWallet called");
-    console.log("[Leaderboard] wallets available:", wallets.length, wallets.map(w => w.adapter.name));
-    console.log("[Leaderboard] connected:", connected, "connecting:", connecting, "address:", address);
-    const firstWallet = wallets[0];
-    if (firstWallet) {
-      console.log("[Leaderboard] selecting wallet:", firstWallet.adapter.name);
-      selectWallet(firstWallet.adapter.name);
-    } else {
-      console.log("[Leaderboard] NO wallets found");
-      setConnectError("No wallet adapters found. Please install Shield Wallet and refresh.");
-    }
+  const handleConnectFromModal = async () => {
+    await connect();
+    setPendingSave(true);
   };
 
   const handleSave = async () => {
     if (cursorPos < 3 || saved) return;
 
     if (!walletAddress) {
-      handleConnectWallet();
-      setPendingSave(true);
+      setShowWalletModal(true);
+      return;
+    }
+
+    if (network && network !== "testnet") {
+      setSaveError("Switch to testnet to submit scores.");
       return;
     }
 
@@ -180,6 +222,8 @@ export default function Leaderboard({
   };
 
   if (!visible) return null;
+
+  const isNotTestnet = network && network !== "testnet";
 
   return (
     <div
@@ -207,10 +251,16 @@ export default function Leaderboard({
           </div>
         </div>
 
+        {isNotTestnet && walletAddress && (
+          <div className="lb-wallet-status" style={{ color: "#ffaa00" }}>
+            Warning: connected to {network} — switch to testnet for score submission
+          </div>
+        )}
+
         <button
           className={`lb-btn lb-save-btn${!walletAddress ? " wallet-needed" : ""}`}
           onClick={handleSave}
-          disabled={cursorPos < 3 || saved || saving || connecting}
+          disabled={cursorPos < 3 || saved || saving || connecting || (!!isNotTestnet && !!walletAddress)}
         >
           {saved
             ? "SAVED!"
@@ -220,55 +270,151 @@ export default function Leaderboard({
                 ? "CONNECTING..."
                 : walletAddress
                   ? "SAVE SCORE"
-                  : "CONNECT WALLET & SAVE"}
+                  : "JOIN LEADERBOARD"}
         </button>
 
-        {(connectError || saveError) && (
+        {saveError && (
           <div className="lb-wallet-status" style={{ color: "#ff1493" }}>
-            {connectError || saveError}
+            {saveError}
           </div>
         )}
 
-        {walletAddress && !connectError && !saveError && (
+        {walletAddress && !saveError && (
           <div className="lb-wallet-status">
-            Wallet: {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
+            Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
           </div>
         )}
 
         <div className="lb-board-section">
           <h3 className="lb-board-title">TOP SCORES</h3>
-          <ol className="lb-board-list">
-            {entries.length === 0 ? (
-              <li style={{ justifyContent: "center", color: "#666" }}>
-                NO SCORES YET
-              </li>
-            ) : (
-              entries.slice(0, 10).map((entry, i) => (
-                <li
-                  key={entry.id}
-                  className={
-                    entry.score === score &&
-                    entry.initials === initials.join("") &&
-                    entry.wallet_address === walletAddress
-                      ? "lb-highlight"
-                      : ""
-                  }
-                >
-                  <span className="lb-rank">{i + 1}.</span>
-                  <span className="lb-entry-initials">{entry.initials}</span>
-                  <span className="lb-entry-score">
-                    {String(entry.score).padStart(5, "0")}
-                  </span>
+          <div className="lb-board-viewport">
+            <ol
+              className="lb-board-list"
+              style={{
+                transform: `translateY(-${visibleStart * ROW_HEIGHT}px)`,
+                transition: "transform 0.5s ease-in-out",
+              }}
+            >
+              {entries.length === 0 ? (
+                <li style={{ justifyContent: "center", color: "#666" }}>
+                  NO SCORES YET
                 </li>
-              ))
-            )}
-          </ol>
+              ) : (
+                entries.slice(0, 10).map((entry, i) => (
+                  <li
+                    key={entry.id}
+                    className={
+                      entry.score === score &&
+                      entry.initials === initials.join("") &&
+                      entry.wallet_address === walletAddress
+                        ? "lb-highlight"
+                        : ""
+                    }
+                  >
+                    <span className="lb-rank">{i + 1}.</span>
+                    <span className="lb-entry-initials">{entry.initials}</span>
+                    <span className="lb-entry-score">
+                      {String(entry.score).padStart(5, "0")}
+                    </span>
+                  </li>
+                ))
+              )}
+            </ol>
+          </div>
         </div>
 
         <button className="lb-btn lb-play-btn" onClick={handlePlayAgain}>
           PLAY AGAIN
         </button>
       </div>
+
+      {/* Wallet connect modal — portaled to body so it escapes stacking contexts */}
+      {showWalletModal && createPortal(
+        <div className="wallet-modal-overlay" onMouseDown={() => setShowWalletModal(false)}>
+          <div className="wallet-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              className="wallet-modal-close"
+              onClick={() => setShowWalletModal(false)}
+              aria-label="Close"
+            >
+              X
+            </button>
+
+            <div className="wallet-modal-header">
+              <h3 className="wallet-modal-title">CONNECT WALLET</h3>
+              <p className="wallet-modal-subtitle">to join the leaderboard</p>
+            </div>
+
+            {shieldDetected ? (
+              <button
+                className="wallet-modal-option"
+                onClick={handleConnectFromModal}
+                disabled={connecting}
+              >
+                <span className="wallet-modal-icon">
+                  <svg width="32" height="32" viewBox="0 0 512 512" fill="none">
+                    <rect width="512" height="512" fill="#222" rx="80"/>
+                    <path d="M124.6 278.4V113.4H256.2V428.6C255.3 428.2 124.6 381.6 124.6 278.4Z" fill="url(#sg1)"/>
+                    <path d="M387.8 278.4V113.4H256.2V428.6C257.1 428.2 387.8 381.6 387.8 278.4Z" fill="url(#sg2)"/>
+                    <defs>
+                      <linearGradient id="sg1" x1="190" y1="113" x2="190" y2="429" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#fff"/><stop offset="1" stopColor="#fff" stopOpacity="0"/>
+                      </linearGradient>
+                      <linearGradient id="sg2" x1="322" y1="113" x2="322" y2="429" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#fff" stopOpacity="0"/><stop offset="1" stopColor="#fff"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </span>
+                <span className="wallet-modal-info">
+                  <span className="wallet-modal-name">Shield Wallet</span>
+                  <span className="wallet-modal-badge wallet-modal-detected">
+                    {connecting ? "Connecting..." : "Detected"}
+                  </span>
+                </span>
+              </button>
+            ) : (
+              <a
+                href="https://www.shield.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="wallet-modal-option"
+              >
+                <span className="wallet-modal-icon">
+                  <svg width="32" height="32" viewBox="0 0 512 512" fill="none">
+                    <rect width="512" height="512" fill="#222" rx="80"/>
+                    <path d="M124.6 278.4V113.4H256.2V428.6C255.3 428.2 124.6 381.6 124.6 278.4Z" fill="url(#sg1b)"/>
+                    <path d="M387.8 278.4V113.4H256.2V428.6C257.1 428.2 387.8 381.6 387.8 278.4Z" fill="url(#sg2b)"/>
+                    <defs>
+                      <linearGradient id="sg1b" x1="190" y1="113" x2="190" y2="429" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#fff"/><stop offset="1" stopColor="#fff" stopOpacity="0"/>
+                      </linearGradient>
+                      <linearGradient id="sg2b" x1="322" y1="113" x2="322" y2="429" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#fff" stopOpacity="0"/><stop offset="1" stopColor="#fff"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </span>
+                <span className="wallet-modal-info">
+                  <span className="wallet-modal-name">Shield Wallet</span>
+                  <span className="wallet-modal-badge wallet-modal-install">Not detected</span>
+                </span>
+              </a>
+            )}
+
+            {!shieldDetected && (
+              <p className="wallet-modal-hint">
+                Click above to install the Shield browser extension, then refresh this page.
+              </p>
+            )}
+
+            {connectError && (
+              <p className="wallet-modal-error">{connectError}</p>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
