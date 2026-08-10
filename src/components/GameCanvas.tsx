@@ -101,7 +101,7 @@ export default function GameCanvas({
     injectAudioTemplate();
 
     const script = document.createElement("script");
-    script.src = "/game/game.js";
+    script.src = "/game/game.js?v=gameover-polish-4";
     script.onload = () => {
       if (window.Runner && containerRef.current) {
         new window.Runner(".interstitial-wrapper");

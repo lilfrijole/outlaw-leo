@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import WalletProvider from "@/components/WalletProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,7 +20,7 @@ export default function RootLayout({
         />
       </head>
       <body id="t" className="offline">
-        <WalletProvider>{children}</WalletProvider>
+        {children}
       </body>
     </html>
   );

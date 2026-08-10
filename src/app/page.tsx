@@ -1,24 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useShieldWallet } from "@/components/WalletProvider";
 import GameCanvas from "@/components/GameCanvas";
-import Leaderboard from "@/components/Leaderboard";
-import LeaderBadge from "@/components/LeaderBadge";
+import GameOver from "@/components/GameOver";
 
 export default function Home() {
-  const { address } = useShieldWallet();
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [gameOverScore, setGameOverScore] = useState(0);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [gameReady, setGameReady] = useState(false);
+  const [showGameOver, setShowGameOver] = useState(false);
   const [showStartScreen, setShowStartScreen] = useState(true);
-
-  useEffect(() => {
-    if (address) {
-      setWalletAddress(address);
-    }
-  }, [address]);
 
   useEffect(() => {
     if (!showStartScreen) return;
@@ -33,34 +22,20 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handler);
   }, [showStartScreen]);
 
-  const handleWalletConnected = useCallback((addr: string) => {
-    setWalletAddress(addr);
-  }, []);
-
   const handleGameOver = useCallback((score: number) => {
     setGameOverScore(score);
-    setShowLeaderboard(true);
-  }, []);
-
-  const handleGameReady = useCallback(() => {
-    setGameReady(true);
+    setShowGameOver(true);
   }, []);
 
   const handleRestart = useCallback(() => {
-    setShowLeaderboard(false);
+    setShowGameOver(false);
     if (window.Runner?.instance_) {
       window.Runner.instance_.restart();
     }
   }, []);
 
-  const handleLeaderboardClose = useCallback(() => {
-    setShowLeaderboard(false);
-  }, []);
-
   return (
     <main className="game-page">
-      <LeaderBadge />
-
       {showStartScreen && (
         <div className="start-overlay">
           <div className="start-text">
@@ -73,17 +48,14 @@ export default function Home() {
 
       <GameCanvas
         onGameOver={handleGameOver}
-        onGameReady={handleGameReady}
-        onRestart={() => setShowLeaderboard(false)}
-        overlayActive={showLeaderboard}
+        onGameReady={() => {}}
+        onRestart={() => setShowGameOver(false)}
+        overlayActive={showGameOver}
       />
 
-      <Leaderboard
-        visible={showLeaderboard}
+      <GameOver
+        visible={showGameOver}
         score={gameOverScore}
-        walletAddress={walletAddress}
-        onWalletConnected={handleWalletConnected}
-        onClose={handleLeaderboardClose}
         onRestart={handleRestart}
       />
     </main>

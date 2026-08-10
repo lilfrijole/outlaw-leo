@@ -133,9 +133,6 @@ html, body {
   display: block;
   width: 100%;
   margin: 0 0 12px 0;
-  text-decoration: none;
-  text-align: center;
-  box-sizing: border-box;
 }
 
 .credit-gate-connect {
@@ -213,392 +210,41 @@ html, body {
   font-weight: bold;
 }
 
-/* ---------- Leaderboard Overlay ---------- */
+/* ---------- Game Over Overlay ---------- */
 
-.leaderboard-overlay {
+.game-over-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(247, 247, 247, 0.92);
+  background: transparent;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  pointer-events: none;
+  padding-bottom: max(48px, 14vh);
 }
 
-.leaderboard-panel {
-  background: #f7f7f7;
-  border: 3px solid #535353;
-  border-radius: 4px;
-  padding: 28px 36px;
-  max-width: 440px;
-  width: 92%;
+.game-over-footer {
   text-align: center;
 }
 
-.lb-title {
+.go-score {
   font-family: 'Press Start 2P', monospace;
-  font-size: 1rem;
-  color: #535353;
-  margin: 0 0 14px 0;
+  font-size: 0.95rem;
+  color: #c62828;
+  margin: 0 0 16px 0;
   letter-spacing: 1px;
 }
 
-.lb-score {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.75rem;
-  color: #535353;
-  margin: 0 0 20px 0;
-}
-
-.lb-initials-section {
-  margin: 0 0 18px 0;
-}
-
-.lb-initials-label {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.5rem;
-  color: #757575;
-  margin: 0 0 12px 0;
-}
-
-.lb-initials-picker {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-
-.lb-letter {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 1.5rem;
-  color: #535353;
-  background: #e8e8e8;
-  width: 48px;
-  height: 48px;
-  line-height: 48px;
-  display: inline-block;
-  border-radius: 3px;
-  border: 2px solid #ccc;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.lb-letter-active {
-  border-color: #535353;
-  box-shadow: 0 0 0 2px rgba(83, 83, 83, 0.3);
-}
-
-.lb-btn {
+.go-hint {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.55rem;
-  border: 2px solid;
-  border-radius: 3px;
-  padding: 10px 20px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  display: inline-block;
-  text-decoration: none;
-  text-align: center;
-}
-
-.lb-save-btn {
-  background: #535353;
-  color: #fff;
-  border-color: #535353;
-  margin: 0 0 10px 0;
-  display: block;
-  width: 100%;
-}
-
-.lb-save-btn:hover {
-  background: #333;
-  border-color: #333;
-}
-
-.lb-save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.lb-save-btn.wallet-needed {
-  background: #ff1493;
-  border-color: #ff1493;
-}
-
-.lb-save-btn.wallet-needed:hover {
-  background: #d4107a;
-  border-color: #d4107a;
-}
-
-.lb-wallet-status {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.4rem;
   color: #757575;
-  margin: 0 0 16px 0;
-  min-height: 14px;
-  word-break: break-all;
-}
-
-.lb-board-section {
-  margin: 0 0 18px 0;
-}
-
-.lb-board-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.55rem;
-  color: #535353;
-  margin: 0 0 10px 0;
-}
-
-.lb-board-viewport {
-  overflow: hidden;
-  /* Show exactly 3 rows: 28px each */
-  height: 84px;
-}
-
-.lb-board-list {
-  list-style: none;
-  padding: 0;
   margin: 0;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.45rem;
-  color: #535353;
-  text-align: left;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
-.lb-board-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 5px 8px;
-  border-bottom: 1px solid #ddd;
-  height: 28px;
-  box-sizing: border-box;
-}
-
-.lb-board-list li .lb-rank {
-  color: #535353;
-  min-width: 30px;
-  font-weight: bold;
-}
-
-.lb-board-list li .lb-entry-initials {
-  flex: 1;
-  text-align: center;
-}
-
-.lb-board-list li .lb-entry-score {
-  min-width: 70px;
-  text-align: right;
-}
-
-.lb-board-list li.lb-highlight {
-  background: rgba(83, 83, 83, 0.1);
-}
-
-.lb-play-btn {
-  background: transparent;
-  color: #535353;
-  border-color: #535353;
-}
-
-.lb-play-btn:hover {
-  background: #535353;
-  color: #fff;
-}
-
-/* ---------- Wallet Connect Modal ---------- */
-
-.wallet-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.wallet-modal {
-  background: #2a2a2a;
-  border: 3px solid #535353;
-  border-radius: 10px;
-  padding: 32px 28px 24px;
-  width: 340px;
-  position: relative;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-.wallet-modal-close {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 0.6rem;
-  color: #777;
-  cursor: pointer;
-  font-family: 'Press Start 2P', monospace;
-  line-height: 1;
-  padding: 4px;
-}
-
-.wallet-modal-close:hover {
-  color: #fff;
-}
-
-.wallet-modal-header {
-  margin: 0 0 24px 0;
-  text-align: center;
-}
-
-.wallet-modal-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.6rem;
-  color: #fff;
-  margin: 0 0 8px 0;
-  line-height: 1.6;
-}
-
-.wallet-modal-subtitle {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.4rem;
-  color: #999;
-  margin: 0;
-}
-
-.wallet-modal-option {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 16px;
-  border: 2px solid #444;
-  border-radius: 8px;
-  background: #333;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  text-decoration: none;
-  color: inherit;
-  box-sizing: border-box;
-}
-
-.wallet-modal-option:hover {
-  border-color: #ff1493;
-  background: #3a3a3a;
-}
-
-.wallet-modal-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.wallet-modal-icon svg {
-  border-radius: 8px;
-}
-
-.wallet-modal-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 1;
-  gap: 8px;
-}
-
-.wallet-modal-name {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.45rem;
-  color: #fff;
-  text-align: left;
-}
-
-.wallet-modal-badge {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.3rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.wallet-modal-detected {
-  background: rgba(46, 125, 50, 0.2);
-  color: #66bb6a;
-}
-
-.wallet-modal-install {
-  background: rgba(230, 81, 0, 0.2);
-  color: #ffa726;
-}
-
-.wallet-modal-hint {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.3rem;
-  color: #888;
-  margin: 14px 0 0 0;
-  text-align: center;
-  line-height: 1.8;
-}
-
-.wallet-modal-error {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.3rem;
-  color: #ff1493;
-  margin: 14px 0 0 0;
-  text-align: center;
-  line-height: 1.8;
-}
-
-/* ---------- Restart Button ---------- */
-
-.restart-btn-wrap {
-  text-align: center;
-  padding: 16px 0;
-}
-
-.restart-btn {
-  background: #535353;
-  color: #fff;
-  border-color: #535353;
-}
-
-.restart-btn:hover {
-  background: #333;
-  border-color: #333;
-}
-
-/* ---------- #1 Leader Badge ---------- */
-
-.leader-badge {
-  position: absolute;
-  top: 40px;
-  left: 16px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(83, 83, 83, 0.9);
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-family: 'Press Start 2P', monospace;
-}
-
-.leader-badge-crown {
-  font-size: 0.35rem;
-  color: #ffd700;
-}
-
-.leader-badge-initials {
-  font-size: 0.45rem;
-  color: #fff;
-  letter-spacing: 2px;
-}
-
-.leader-badge-score {
-  font-size: 0.35rem;
-  color: #aaa;
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }

@@ -35,8 +35,6 @@
         this.distanceMeter = null;
         this.distanceRan = 0;
 
-        this.highestScore = 0;
-
         this.time = 0;
         this.runningTime = 0;
         this.msPerFrame = 1000 / FPS;
@@ -451,7 +449,11 @@
                 this.distanceMeter.calcXPos(this.dimensions.WIDTH);
                 this.clearCanvas();
                 this.horizon.update(0, 0, true);
-                this.leo.update(0);
+
+                // Skip runner Leo on the game-over card so he doesn't sit on a cactus.
+                if (!this.crashed) {
+                    this.leo.update(0);
+                }
 
                 // Outer container and distance meter.
                 if (this.playing || this.crashed || this.paused) {
@@ -465,7 +467,8 @@
 
                 // Game over panel.
                 if (this.crashed && this.gameOverPanel) {
-                    this.gameOverPanel.updateDimensions(this.dimensions.WIDTH);
+                    this.gameOverPanel.updateDimensions(this.dimensions.WIDTH,
+                        this.dimensions.HEIGHT);
                     this.gameOverPanel.draw();
                 }
             }
@@ -813,6 +816,20 @@
         },
 
         /**
+         * Snap arcade-mode scale without the CSS transform transition
+         * (avoids the skewed/settle lag on game over).
+         */
+        setArcadeModeContainerScaleImmediate: function () {
+            var container = this.containerEl;
+            var previous = container.style.transition;
+            container.style.transition = 'none';
+            this.setArcadeModeContainerScale();
+            // Force the browser to apply the transform before restoring transition.
+            void container.offsetWidth;
+            container.style.transition = previous;
+        },
+
+        /**
          * Finish game over after Leo has fallen off screen.
          */
         finishGameOver: function () {
@@ -820,11 +837,19 @@
             this.crashing = false;
             this.crashed = true;
 
-            if (this.distanceRan > this.highestScore) {
-                this.highestScore = Math.ceil(this.distanceRan);
-                this.distanceMeter.setHighScore(this.highestScore);
+            var finalScore = this.distanceMeter.getActualDistance(
+                Math.ceil(this.distanceRan));
+
+            // Extra room below the jail for the restart hint. Snap scale (no lag).
+            this.dimensions.HEIGHT = GameOverPanel.GAME_OVER_HEIGHT;
+            this.canvas.height = this.dimensions.HEIGHT;
+            this.containerEl.style.height = this.dimensions.HEIGHT + 'px';
+            Runner.updateCanvasScaling(this.canvas);
+            if (this.activated) {
+                this.setArcadeModeContainerScaleImmediate();
             }
 
+            // Playfield behind the art — but do not redraw the runner Leo.
             this.clearCanvas();
             this.horizon.update(0, 0, true, this.inverted);
             this.distanceMeter.update(0, Math.ceil(this.distanceRan));
@@ -832,16 +857,16 @@
             if (!this.gameOverPanel) {
                 this.gameOverPanel = new GameOverPanel(this.canvas,
                     this.spriteDef.TEXT_SPRITE, this.spriteDef.RESTART,
-                    this.dimensions);
+                    this.dimensions, finalScore);
             } else {
+                this.gameOverPanel.setScore(finalScore);
+                this.gameOverPanel.updateDimensions(this.dimensions.WIDTH,
+                    this.dimensions.HEIGHT);
                 this.gameOverPanel.draw();
             }
 
             this.time = getTimeStamp();
 
-            var finalScore = this.distanceMeter.getActualDistance(
-                Math.ceil(this.distanceRan));
-            var self = this;
             setTimeout(function () {
                 var bridge = window.__OUTLAW_LEO__;
                 if (bridge && bridge.onGameOver) {
@@ -891,8 +916,16 @@
                 this.setSpeed(this.config.SPEED);
                 this.time = getTimeStamp();
                 this.containerEl.classList.remove(Runner.classes.CRASHED);
+                this.gameOverPanel = null;
+                this.dimensions.HEIGHT = Runner.defaultDimensions.HEIGHT;
+                this.canvas.height = this.dimensions.HEIGHT;
+                this.containerEl.style.height = this.dimensions.HEIGHT + 'px';
+                Runner.updateCanvasScaling(this.canvas);
+                if (this.activated) {
+                    this.setArcadeModeContainerScaleImmediate();
+                }
                 this.clearCanvas();
-                this.distanceMeter.reset(this.highestScore);
+                this.distanceMeter.reset();
                 this.horizon.reset();
                 this.leo.reset();
                 this.playSound(this.soundFx.BUTTON_PRESS);
@@ -1098,12 +1131,13 @@
      * @param {!Object} dimensions Canvas dimensions.
      * @constructor
      */
-    function GameOverPanel(canvas, textImgPos, restartImgPos, dimensions) {
+    function GameOverPanel(canvas, textImgPos, restartImgPos, dimensions, score) {
         this.canvas = canvas;
         this.canvasCtx = canvas.getContext('2d');
         this.canvasDimensions = dimensions;
         this.textImgPos = textImgPos;
         this.restartImgPos = restartImgPos;
+        this.score = score || 0;
         this.draw();
     };
 
@@ -1121,6 +1155,8 @@
         RESTART_HEIGHT: 32
     };
 
+    /** Extra canvas height so the restart hint fits below the jail art. */
+    GameOverPanel.GAME_OVER_HEIGHT = 175;
 
     GameOverPanel.prototype = {
         updateDimensions: function (width, opt_height) {
@@ -1130,21 +1166,50 @@
             }
         },
 
+        setScore: function (score) {
+            this.score = score || 0;
+        },
+
         draw: function () {
             var ctx = this.canvasCtx;
             var centerX = this.canvasDimensions.WIDTH / 2;
+            var scoreText = 'SCORE: ' + String(this.score).padStart(5, '0');
+
+            var imgW = 120;
+            var imgH = 90;
+            if (Runner.jailSprite && Runner.jailSprite.complete &&
+                Runner.jailSprite.width) {
+                imgH = (Runner.jailSprite.height / Runner.jailSprite.width) * imgW;
+            }
+            var titleY = 20;
+            var scoreY = 40;
+            var leoY = 50;
+            var hintY = leoY + imgH + 16;
 
             ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
             ctx.font = '12px "Press Start 2P", monospace';
             ctx.fillStyle = '#535353';
-            ctx.textAlign = 'center';
-            ctx.fillText('LEO GOT CAUGHT!', centerX, 30);
+            ctx.fillText('LEO GOT CAUGHT!', centerX, titleY);
+
+            ctx.font = '14px "Press Start 2P", monospace';
+            ctx.fillStyle = '#c62828';
+            ctx.fillText(scoreText, centerX, scoreY);
 
             if (Runner.jailSprite && Runner.jailSprite.complete) {
-                var imgW = 120;
-                var imgH = (Runner.jailSprite.height / Runner.jailSprite.width) * imgW;
-                ctx.drawImage(Runner.jailSprite, centerX - imgW / 2, 40, imgW, imgH);
+                // Mask the ground line / obstacles behind the jail so they
+                // don't cut through the inmate placard.
+                var jailX = centerX - imgW / 2;
+                ctx.fillStyle = '#f7f7f7';
+                ctx.fillRect(jailX - 1, leoY, imgW + 2, imgH + 2);
+                ctx.drawImage(Runner.jailSprite, jailX, leoY, imgW, imgH);
             }
+
+            ctx.font = '8px "Press Start 2P", monospace';
+            ctx.fillStyle = '#757575';
+            ctx.fillText('Press Space to play again', centerX, hintY);
 
             ctx.restore();
         }
@@ -1941,7 +2006,6 @@
 
         this.currentDistance = 0;
         this.maxScore = 0;
-        this.highScore = 0;
         this.container = null;
 
         this.digits = [];
@@ -2022,7 +2086,7 @@
          */
         calcXPos: function (canvasWidth) {
             this.x = canvasWidth - (DistanceMeter.dimensions.DEST_WIDTH *
-                (this.maxScoreUnits + 1));
+                this.maxScoreUnits);
         },
 
         /**
@@ -2144,33 +2208,7 @@
                 }
             }
 
-            this.drawHighScore();
             return playSound;
-        },
-
-        /**
-         * Draw the high score.
-         */
-        drawHighScore: function () {
-            this.canvasCtx.save();
-            this.canvasCtx.globalAlpha = .8;
-            for (var i = this.highScore.length - 1; i >= 0; i--) {
-                this.draw(i, parseInt(this.highScore[i], 10), true);
-            }
-            this.canvasCtx.restore();
-        },
-
-        /**
-         * Set the highscore as a array string.
-         * Position of char in the sprite: H - 10, I - 11.
-         * @param {number} distance Distance ran in pixels.
-         */
-        setHighScore: function (distance) {
-            distance = this.getActualDistance(distance);
-            var highScoreStr = (this.defaultString +
-                distance).substr(-this.maxScoreUnits);
-
-            this.highScore = ['10', '11', ''].concat(highScoreStr.split(''));
         },
 
         /**
